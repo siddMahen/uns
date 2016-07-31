@@ -5,20 +5,20 @@
 *.pyc
 
 # We don't need to keep track of this
-log/*
 test/*
 train/*
-data/*
 expr_train/*
+
+log/*
+data/*
 checkpoint/*
 
-!data/
-!checkpoint/
+# To simulate empty directories
+!log/.keep
+!data/.keep
+!checkpoint/.keep
 
 # Ignore misc garbage
 .ipynb_checkpoints/*
 .DS_Store
 *.ipynb
-
-
-
