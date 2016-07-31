@@ -1,0 +1,24 @@
+# Ignore pem key
+*.pem
+
+# Ignore compiled python
+*.pyc
+
+# We don't need to keep track of this
+log/*
+test/*
+train/*
+data/*
+expr_train/*
+checkpoint/*
+
+!data/
+!checkpoint/
+
+# Ignore misc garbage
+.ipynb_checkpoints/*
+.DS_Store
+*.ipynb
+
+
+
