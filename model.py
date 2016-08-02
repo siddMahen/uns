@@ -18,7 +18,8 @@ def _variable_on_cpu(name, shape, initializer):
     return var
 
 def weight_var(name, shape, wd=None):
-    var = _variable_on_cpu(name, shape, tf.truncated_normal_initializer(stddev=0.0625))
+    stddev = np.sqrt(2.0/np.prod(shape[:-1]))
+    var = _variable_on_cpu(name, shape, tf.truncated_normal_initializer(stddev=stddev))
 
     if wd is not None:
         weight_decay = tf.mul(tf.nn.l2_loss(var), wd, name='weight_loss')
