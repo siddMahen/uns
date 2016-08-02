@@ -116,17 +116,64 @@ def inference(images, keep_prob):
         l2 = max_pool(l2_concat, k=3, s=2)
         # output here is 9 x 9 x 480
 
+    with tf.variable_scope("l3"):
+        l3_1x1 = conv_layer(l2, 480, 192, k=1, s=1, layer_name="l3_1x1")
+
+        l3_3x3_pre = conv_layer(l2, 480, 96, k=1, s=1, layer_name="l3_3x3_pre")
+        l3_3x3 = conv_layer(l3_3x3_pre, 96, 208, k=3, s=1, layer_name="l3_3x3")
+
+        l3_5x5_pre = conv_layer(l2, 480, 16, k=1, s=1, layer_name="l3_5x5_pre")
+        l3_5x5 = conv_layer(l3_5x5_pre, 16, 48, k=5, s=1, layer_name="l3_5x5")
+
+        l3_mp = max_pool(l2, k=3, s=1)
+        l3_proj = conv_layer(l3_mp, 480, 64, k=1, s=1, layer_name="l3_proj")
+
+        l3 = tf.concat(3, [l3_1x1, l3_3x3, l3_5x5, l3_proj])
+        #output here is 9 x 9 x 512
+
+    with tf.variable_scope("l4"):
+        l4_1x1 = conv_layer(l3, 512, 160, k=1, s=1, layer_name="l4_1x1")
+
+        l4_3x3_pre = conv_layer(l3, 512, 112, k=1, s=1, layer_name="l4_3x3_pre")
+        l4_3x3 = conv_layer(l4_3x3_pre, 112, 224, k=3, s=1, layer_name="l4_3x3")
+
+        l4_5x5_pre = conv_layer(l3, 512, 24, k=1, s=1, layer_name="l4_5x5_pre")
+        l4_5x5 = conv_layer(l4_5x5_pre, 24, 64, k=5, s=1, layer_name="l4_5x5")
+
+        l4_mp = max_pool(l3, k=3, s=1)
+        l4_proj = conv_layer(l4_mp, 512, 64, k=1, s=1, layer_name="l4_proj")
+
+        l4 = tf.concat(3, [l4_1x1, l4_3x3, l4_5x5, l4_proj])
+        #output here is 9 x 9 x 512
+
+    with tf.variable_scope("l5"):
+        l5_1x1 = conv_layer(l4, 512, 128, k=1, s=1, layer_name="l5_1x1")
+
+        l5_3x3_pre = conv_layer(l4, 512, 128, k=1, s=1, layer_name="l5_3x3_pre")
+        l5_3x3 = conv_layer(l5_3x3_pre, 128, 256, k=3, s=1, layer_name="l5_3x3")
+
+        l5_5x5_pre = conv_layer(l4, 512, 24, k=1, s=1, layer_name="l5_5x5_pre")
+        l5_5x5 = conv_layer(l5_5x5_pre, 24, 64, k=5, s=1, layer_name="l5_5x5")
+
+        l5_mp = max_pool(l4, k=3, s=1)
+        l5_proj = conv_layer(l5_mp, 512, 64, k=1, s=1, layer_name="l5_proj")
+
+        l5 = tf.concat(3, [l5_1x1, l5_3x3, l5_5x5, l5_proj])
+        #output here is 9 x 9 x 512
+
     with tf.variable_scope("lrn"):
-        norm = tf.nn.local_response_normalization(l2, depth_radius=2,
+        norm = tf.nn.local_response_normalization(l5, depth_radius=2,
                 bias=1.0, alpha=1e-3, beta=0.75)
         avg_pool = tf.nn.avg_pool(norm, [1, 9, 9, 1], [1, 1, 1, 1], 'VALID')
         # output here is 1 x 1 x 480
         # use a deconvolution here instead?
-        flat = tf.reshape(avg_pool, [-1, 480])
+        flat = tf.reshape(avg_pool, [-1, 512])
 
     with tf.variable_scope("fc"):
-        fc1 = fc_layer(flat, 480, 180, keep_prob, "fc1")
-        fc2 = fc_layer(fc1, 180, 2, 1.0, "fc2", final=True)
+        fc1 = fc_layer(flat, 512, 256, keep_prob, "fc1")
+        fc2 = fc_layer(fc1, 256, 128, keep_prob, "fc2")
+        fc3 = fc_layer(fc2, 128, 64, keep_prob, "fc3")
+        fc4 = fc_layer(fc3, 64, 2, 1.0, "fc4", final=True)
 
     return fc2
 
