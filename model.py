@@ -171,9 +171,7 @@ def inference(images, keep_prob):
 
     with tf.variable_scope("fc"):
         fc1 = fc_layer(flat, 512, 256, keep_prob, "fc1")
-        fc2 = fc_layer(fc1, 256, 128, keep_prob, "fc2")
-        fc3 = fc_layer(fc2, 128, 64, keep_prob, "fc3")
-        fc4 = fc_layer(fc3, 64, 2, 1.0, "fc4", final=True)
+        fc2 = fc_layer(fc1, 256, 2, 1.0, "fc2", final=True)
 
-    return fc4
+    return fc2
 
