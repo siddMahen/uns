@@ -175,5 +175,5 @@ def inference(images, keep_prob):
         fc3 = fc_layer(fc2, 128, 64, keep_prob, "fc3")
         fc4 = fc_layer(fc3, 64, 2, 1.0, "fc4", final=True)
 
-    return fc2
+    return fc4
 
