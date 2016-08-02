@@ -26,7 +26,7 @@ def loss(logits, labels):
 
 def train(loss):
     with tf.name_scope('train'):
-        train_op = tf.train.AdamOptimizer(1e-3).minimize(loss)
+        train_op = tf.train.AdamOptimizer(1e-4).minimize(loss)
         return train_op
 
 def run_training(run_name, filenames):
