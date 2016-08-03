@@ -73,7 +73,6 @@ def fc_layer(input_tensor, input_dim, output_dim, keep_prob, layer_name, final=F
             return tf.nn.dropout(relu, keep_prob)
 
 def inference(images, keep_prob):
-    # new, inception based architecture
     with tf.variable_scope("conv1"):
         c1 = conv_layer(images, 1, 64, k=7, s=2, layer_name="conv1")
         mp1 = max_pool(c1, k=3, s=2)
@@ -162,17 +161,78 @@ def inference(images, keep_prob):
         l5 = tf.concat(3, [l5_1x1, l5_3x3, l5_5x5, l5_proj])
         #output here is 9 x 9 x 512
 
+    with tf.variable_scope("l6"):
+        l6_1x1 = conv_layer(l5, 512, 112, k=1, s=1, layer_name="l6_1x1")
+
+        l6_3x3_pre = conv_layer(l5, 512, 144, k=1, s=1, layer_name="l6_3x3_pre")
+        l6_3x3 = conv_layer(l6_3x3_pre, 144, 288, k=3, s=1, layer_name="l6_3x3")
+
+        l6_5x5_pre = conv_layer(l5, 512, 32, k=1, s=1, layer_name="l6_5x5_pre")
+        l6_5x5 = conv_layer(l6_5x5_pre, 32, 64, k=5, s=1, layer_name="l6_5x5")
+
+        l6_mp = max_pool(l5, k=3, s=1)
+        l6_proj = conv_layer(l6_mp, 512, 64, k=1, s=1, layer_name="l6_proj")
+
+        l6 = tf.concat(3, [l6_1x1, l6_3x3, l6_5x5, l6_proj])
+        #output here is 9 x 9 x 528
+
+    with tf.variable_scope("l7"):
+        l7_1x1 = conv_layer(l6, 528, 256, k=1, s=1, layer_name="l7_1x1")
+
+        l7_3x3_pre = conv_layer(l6, 528, 160, k=1, s=1, layer_name="l7_3x3_pre")
+        l7_3x3 = conv_layer(l7_3x3_pre, 160, 320, k=3, s=1, layer_name="l7_3x3")
+
+        l7_5x5_pre = conv_layer(l6, 528, 32, k=1, s=1, layer_name="l7_5x5_pre")
+        l7_5x5 = conv_layer(l7_5x5_pre, 32, 128, k=5, s=1, layer_name="l7_5x5")
+
+        l7_mp = max_pool(l6, k=3, s=1)
+        l7_proj = conv_layer(l7_mp, 528, 128, k=1, s=1, layer_name="l7_proj")
+
+        l7_concat = tf.concat(3, [l7_1x1, l7_3x3, l7_5x5, l7_proj])
+        l7 = tf.nn.max_pool(l7_concat, ksize=[1, 3, 3, 1], strides=[1, 1, 1, 1],
+            padding='VALID')
+        #output here is 7 x 7 x 832
+
+    with tf.variable_scope("l8"):
+        l8_1x1 = conv_layer(l7, 832, 256, k=1, s=1, layer_name="l8_1x1")
+
+        l8_3x3_pre = conv_layer(l7, 832, 160, k=1, s=1, layer_name="l8_3x3_pre")
+        l8_3x3 = conv_layer(l8_3x3_pre, 160, 320, k=3, s=1, layer_name="l8_3x3")
+
+        l8_5x5_pre = conv_layer(l7, 832, 32, k=1, s=1, layer_name="l8_5x5_pre")
+        l8_5x5 = conv_layer(l8_5x5_pre, 32, 128, k=5, s=1, layer_name="l8_5x5")
+
+        l8_mp = max_pool(l7, k=3, s=1)
+        l8_proj = conv_layer(l8_mp, 832, 128, k=1, s=1, layer_name="l8_proj")
+
+        l8 = tf.concat(3, [l8_1x1, l8_3x3, l8_5x5, l8_proj])
+
+    with tf.variable_scope("l9"):
+        l9_1x1 = conv_layer(l8, 832, 384, k=1, s=1, layer_name="l9_1x1")
+
+        l9_3x3_pre = conv_layer(l8, 832, 192, k=1, s=1, layer_name="l9_3x3_pre")
+        l9_3x3 = conv_layer(l9_3x3_pre, 192, 384, k=3, s=1, layer_name="l9_3x3")
+
+        l9_5x5_pre = conv_layer(l8, 832, 48, k=1, s=1, layer_name="l9_5x5_pre")
+        l9_5x5 = conv_layer(l9_5x5_pre, 48, 128, k=5, s=1, layer_name="l9_5x5")
+
+        l9_mp = max_pool(l8, k=3, s=1)
+        l9_proj = conv_layer(l9_mp, 832, 128, k=1, s=1, layer_name="l9_proj")
+
+        l9 = tf.concat(3, [l9_1x1, l9_3x3, l9_5x5, l9_proj])
+        # output here is 7 x 7 x 1024
+
     with tf.variable_scope("lrn"):
-        norm = tf.nn.local_response_normalization(l5, depth_radius=2,
+        norm = tf.nn.local_response_normalization(l9, depth_radius=2,
                 bias=1.0, alpha=1e-3, beta=0.75)
-        avg_pool = tf.nn.avg_pool(norm, [1, 9, 9, 1], [1, 1, 1, 1], 'VALID')
-        # output here is 1 x 1 x 480
+        avg_pool = tf.nn.avg_pool(norm, [1, 7, 7, 1], [1, 1, 1, 1], 'VALID')
+        # output here is 1 x 1 x 1024
         # use a deconvolution here instead?
-        flat = tf.reshape(avg_pool, [-1, 512])
+        flat = tf.reshape(avg_pool, [-1, 1024])
 
     with tf.variable_scope("fc"):
-        fc1 = fc_layer(flat, 512, 256, keep_prob, "fc1")
-        fc2 = fc_layer(fc1, 256, 2, 1.0, "fc2", final=True)
+        fc1 = fc_layer(flat, 1024, 512, keep_prob, "fc1")
+        fc2 = fc_layer(fc1, 512, 2, 1.0, "fc2", final=True)
 
     return fc2
 
