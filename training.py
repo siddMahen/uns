@@ -22,6 +22,10 @@ def loss(logits, labels):
         with tf.name_scope('normalized'):
             normalized = tf.reduce_mean(sft_max)
         tf.scalar_summary('cross_entropy', normalized)
+
+    for l in tf.get_collection("losses"):
+        normalized += l
+
     return normalized
 
 def train(loss):

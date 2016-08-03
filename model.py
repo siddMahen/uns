@@ -40,7 +40,7 @@ def max_pool(x, k, s):
 
 def conv_layer(input_tensor, input_dim, output_dim, k, s, layer_name):
     with tf.variable_scope(layer_name):
-        weights = weight_var("weights", [k, k, input_dim, output_dim])
+        weights = weight_var("weights", [k, k, input_dim, output_dim], wd=3.0e-4)
         bias = bias_var("bias", [output_dim])
 
         variable_summaries(weights, layer_name + '/weights')
@@ -56,7 +56,7 @@ def conv_layer(input_tensor, input_dim, output_dim, k, s, layer_name):
 
 def fc_layer(input_tensor, input_dim, output_dim, keep_prob, layer_name, final=False):
     with tf.variable_scope(layer_name):
-        weights = weight_var("weights", [input_dim, output_dim])
+        weights = weight_var("weights", [input_dim, output_dim], wd=1.0e-3)
         bias = bias_var("bias", [output_dim])
 
         variable_summaries(weights, layer_name + '/weights')
@@ -227,7 +227,6 @@ def inference(images, keep_prob):
                 bias=1.0, alpha=1e-3, beta=0.75)
         avg_pool = tf.nn.avg_pool(norm, [1, 7, 7, 1], [1, 1, 1, 1], 'VALID')
         # output here is 1 x 1 x 1024
-        # use a deconvolution here instead?
         flat = tf.reshape(avg_pool, [-1, 1024])
 
     with tf.variable_scope("fc"):
