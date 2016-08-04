@@ -26,6 +26,7 @@ def create_mask(run_name, filename):
         keep_prob = tf.Variable(1.0, name='keep_prob', trainable=False)
 
         logits = inference(images, keep_prob)
+        prob = tf.nn.softmax(logits)
         pred = prediction(logits)
 
         sess = tf.Session()
@@ -51,11 +52,12 @@ def create_mask(run_name, filename):
                 for i in range(PATCH_WIDTH):
                     for j in range(PATCH_WIDTH):
                         patch[i,j] = padded_im[x + (i - k), y + (j - k)]
-                res = sess.run(pred, feed_dict={
+                res = sess.run(prob, feed_dict={
                     images: [patch.reshape((PATCH_WIDTH, PATCH_WIDTH, 1))] })
-                result[(x - k)/4, (y - k)/4] = res
+                result[(x - k)/4, (y - k)/4] = res[0][1]
 
-        im = Image.fromarray(result.astype('uint8')*255)
+        result = 255*result
+        im = Image.fromarray(result.astype('uint8'))
         im.save('mask-test.tif')
         #ar = np.reshape(255*ar, (420, 580))
         #im = Image.fromarray(ar, mode='L').convert('1')
