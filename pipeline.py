@@ -31,7 +31,7 @@ def inputs(filenames, batch_size, num_epochs, train=True):
 
         example, label = read_and_decode(filename_queue)
 
-        min_after_dequeue = 100
+        min_after_dequeue = 1500
         capacity = min_after_dequeue + 3 * batch_size
 
         if train:
