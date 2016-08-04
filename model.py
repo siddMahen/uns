@@ -230,8 +230,11 @@ def inference(images, keep_prob):
         flat = tf.reshape(avg_pool, [-1, 1024])
 
     with tf.variable_scope("fc"):
-        fc1 = fc_layer(flat, 1024, 512, keep_prob, "fc1")
-        fc2 = fc_layer(fc1, 512, 2, 1.0, "fc2", final=True)
+        fc1 = fc_layer(flat, 1024, 768, keep_prob, "fc1")
+        fc2 = fc_layer(fc1, 768, 384, keep_prob, "fc2")
+        fc3 = fc_layer(fc2, 384, 96, keep_prob, "fc3")
+        fc4 = fc_layer(fc3, 96, 48, keep_prob, "fc4")
+        fc5 = fc_layer(fc4, 48, 2, 1.0, "fc5", final=True)
 
-    return fc2
+    return fc5
 
