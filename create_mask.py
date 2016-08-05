@@ -1,24 +1,31 @@
 import tensorflow as tf
 import numpy as np
-from PIL import Image
+import cv2
 
 from model import inference
 
+import os
 import sys
 import glob
 
 PATCH_WIDTH = 139
+WRITE_DIR = "out"
 
 def pad_zeros(vec, w, iaxis, kwargs):
     vec[:w[0]] = 0
     vec[-w[1]:] = 0
     return vec
 
-def create_mask(run_name, filename):
-    im = np.array(Image.open(filename))
-    k = (PATCH_WIDTH - 1)/2
-    padded_im = np.pad(im, k, pad_zeros)
+def cutoff(im, thres):
+    for i in range(im.shape[0]):
+        for j in range(im.shape[1]):
+            v = im[i,j]
+            if v < thres:
+                im[i,j] = 0
+            else:
+                im[i,j] = 255
 
+def create_mask(run_name, filenames):
     with tf.Graph().as_default():
         images = tf.placeholder(tf.float32, shape=(1, PATCH_WIDTH, PATCH_WIDTH, 1))
         keep_prob = tf.Variable(1.0, name='keep_prob', trainable=False)
@@ -39,30 +46,45 @@ def create_mask(run_name, filename):
         saver.restore(sess, ckpt_path)
         keep_prob.assign(1.0)
 
-        #heatmap = np.zeros((84, 116))
-        heatmap = np.zeros((42, 58))
+        for fname in filenames:
+            im = cv2.imread(fname, cv2.IMREAD_GRAYSCALE)
+            k = (PATCH_WIDTH - 1)/2
 
-        # try only looking at every fourth pixel?
-        for x in range(0, 420, 10):
-            for y in range(0, 580, 10):
-                patch = padded_im[x:x+PATCH_WIDTH, y:y+PATCH_WIDTH].reshape((PATCH_WIDTH,
-                    PATCH_WIDTH, 1))
-                p = sess.run(prob, feed_dict={ images: [patch] })
-                heatmap[x/10, y/10] = p[0][1]
+            padded_im = np.pad(im, k, pad_zeros)
 
-        # could be (12,11) below
-        #heatmap = np.pad(255*heatmap, ((8,8), (11,12)), pad_zeros)
-        heatmap = 255*heatmap
-        print(heatmap.shape)
+            heatmap = np.zeros((21, 29))
+            # try only looking at every fourth pixel?
+            for x in range(0, 420, 20):
+                for y in range(0, 580, 20):
+                    patch = padded_im[x:x+PATCH_WIDTH, y:y+PATCH_WIDTH].reshape((PATCH_WIDTH,
+                        PATCH_WIDTH, 1))
+                    p = sess.run(prob, feed_dict={ images: [patch] })
+                    heatmap[x/20, y/20] = p[0][1]
 
-        im = Image.fromarray(heatmap.astype("uint8"))
-        im.save("image_mask.tif")
+            heatmap = 255*heatmap
+
+            #upsample image twice
+            u1 = cv2.pyrUp(heatmap)
+            u2 = cv2.pyrUp(u1)
+            cutoff(u2, 128)
+
+            blur = cv2.GaussianBlur(u2, (5,5), 0)
+            resize = cv2.resize(blur, (580, 420))
+            cutoff(resize, 128)
+
+            final = resize.astype("uint8")
+
+            path = os.path.splitext(fname)[0]
+            name = os.path.basename(path)
+            write_path = os.path.join(WRITE_DIR, "%s_mask.tif" % name)
+            print("Mask saved to %s" % write_path)
+
+            cv2.imwrite(write_path, final)
 
         sess.close()
 
 if __name__ == '__main__':
     run_name = sys.argv[1]
-    filename = sys.argv[2]
-    path = create_mask(run_name, filename)
-    print("Mask saved")
+    filenames = sys.argv[2:]
+    path = create_mask(run_name, filenames)
     # example usage: python create_mask.py alpha 1_1.tiff
