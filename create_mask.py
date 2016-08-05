@@ -25,7 +25,12 @@ def cutoff(im, thres):
             else:
                 im[i,j] = 255
 
-def create_mask(run_name, filenames):
+def create_mask(run_name, direc, filenames):
+    directory = os.path.join(WRITE_DIR, direc)
+    if not os.path.exists(directory):
+        os.mkdir(directory)
+        print("Created directory %s" % directory)
+
     with tf.Graph().as_default():
         images = tf.placeholder(tf.float32, shape=(1, PATCH_WIDTH, PATCH_WIDTH, 1))
         keep_prob = tf.Variable(1.0, name='keep_prob', trainable=False)
@@ -76,7 +81,7 @@ def create_mask(run_name, filenames):
 
             path = os.path.splitext(fname)[0]
             name = os.path.basename(path)
-            write_path = os.path.join(WRITE_DIR, "%s_mask.tif" % name)
+            write_path = os.path.join(directory, "%s_mask.tif" % name)
             print("Mask saved to %s" % write_path)
 
             cv2.imwrite(write_path, final)
@@ -85,6 +90,7 @@ def create_mask(run_name, filenames):
 
 if __name__ == '__main__':
     run_name = sys.argv[1]
-    filenames = sys.argv[2:]
-    path = create_mask(run_name, filenames)
-    # example usage: python create_mask.py alpha 1_1.tiff
+    direc = sys.argv[2]
+    filenames = sys.argv[3:]
+    path = create_mask(run_name, direc, filenames)
+    # example usage: python create_mask.py alpha alpha-masks 1_1.tiff
