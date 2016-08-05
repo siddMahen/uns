@@ -40,15 +40,15 @@ def create_mask(run_name, filename):
         keep_prob.assign(1.0)
 
         #heatmap = np.zeros((84, 116))
-        heatmap = np.zeros((21, 29))
+        heatmap = np.zeros((42, 58))
 
         # try only looking at every fourth pixel?
-        for x in range(0, 420, 20):
-            for y in range(0, 580, 20):
+        for x in range(0, 420, 10):
+            for y in range(0, 580, 10):
                 patch = padded_im[x:x+PATCH_WIDTH, y:y+PATCH_WIDTH].reshape((PATCH_WIDTH,
                     PATCH_WIDTH, 1))
                 p = sess.run(prob, feed_dict={ images: [patch] })
-                heatmap[x/20, y/20] = p[0][1]
+                heatmap[x/10, y/10] = p[0][1]
 
         # could be (12,11) below
         #heatmap = np.pad(255*heatmap, ((8,8), (11,12)), pad_zeros)
