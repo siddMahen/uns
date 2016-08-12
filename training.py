@@ -6,6 +6,7 @@ from pipeline import inputs
 from model import inference
 
 import argparse
+import glob
 import sys
 import os
 
@@ -204,8 +205,5 @@ if __name__ == '__main__':
     else:
         run_training(args.run_name, args.training_data)
 
-    #run_name = sys.argv[1]
-    #filenames = sys.argv[2:]
-    #run_training_with_old_model(run_name, filenames)
     # example usage: python training.py test5 data/TRAIN.tfrecords
 
