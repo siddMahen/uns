@@ -59,9 +59,6 @@ def _bytes_feature(value):
   return tf.train.Feature(bytes_list=tf.train.BytesList(value=[value]))
 
 def generate_deconv_dataset(train_im_dir, train_mask_dir, name, filenames):
-    train_im_dir = 'train/images'
-    train_mask_dir = 'train/masks'
-
     data_dir = 'data'
 
     n = 1
@@ -155,8 +152,9 @@ if __name__ == "__main__":
     parser.add_argument('-n', '--name', required=True)
 
     args = parser.parse_args()
+
     t_list = generate_training_list()
-    l = map(lambda x: x + args.suffix, t_list)
+    l = map(lambda x: x + "-" + args.suffix, t_list)
 
     generate_deconv_dataset(args.image_dir, args.mask_dir, args.name, l)
 
