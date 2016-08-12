@@ -151,7 +151,7 @@ def run_training(run_name, filenames):
             ckpt_path = ckpt_paths[0]
             ending = ckpt_path.split('/')[-1].split('-')
 
-            prev_step = int(ending[2])
+            prev_step = int(ending[-1])
             saver.restore(sess, ckpt_path)
         else:
             sess.run(init_op)
