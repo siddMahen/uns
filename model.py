@@ -72,7 +72,7 @@ def fc_layer(input_tensor, input_dim, output_dim, keep_prob, layer_name, final=F
             tf.histogram_summary(layer_name + '/activations_relu', relu)
             return tf.nn.dropout(relu, keep_prob)
 
-def inference(images, keep_prob):
+def inference(images, keep_prob, batch_size):
     with tf.variable_scope("conv1"):
         c1 = conv_layer(images, 1, 64, k=7, s=2, layer_name="conv1")
         mp1 = max_pool(c1, k=3, s=2)
@@ -222,19 +222,12 @@ def inference(images, keep_prob):
         l9 = tf.concat(3, [l9_1x1, l9_3x3, l9_5x5, l9_proj])
         # output here is 7 x 7 x 1024
 
-    with tf.variable_scope("lrn"):
-        norm = tf.nn.local_response_normalization(l9, depth_radius=2,
-                bias=1.0, alpha=1e-3, beta=0.75)
-        avg_pool = tf.nn.avg_pool(norm, [1, 7, 7, 1], [1, 1, 1, 1], 'VALID')
-        # output here is 1 x 1 x 1024
-        flat = tf.reshape(avg_pool, [-1, 1024])
+    deconv_1x1_pre = conv_layer(l9, 1024, 256, k=1, s=1, layer_name="deconv_1x1_pre")
 
-    with tf.variable_scope("fc"):
-        fc1 = fc_layer(flat, 1024, 768, keep_prob, "fc1")
-        fc2 = fc_layer(fc1, 768, 384, keep_prob, "fc2")
-        fc3 = fc_layer(fc2, 384, 96, keep_prob, "fc3")
-        fc4 = fc_layer(fc3, 96, 48, keep_prob, "fc4")
-        fc5 = fc_layer(fc4, 48, 2, 1.0, "fc5", final=True)
+    W = weight_var("deconv_weight", [32, 32, 2, 256])
 
-    return fc5
+    deconv = tf.nn.conv2d_transpose(deconv_1x1_pre,
+            W, [batch_size, 420, 580, 2], [1, 17, 17, 1])
+
+    return deconv
 

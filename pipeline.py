@@ -11,18 +11,16 @@ def read_and_decode(filename_queue):
         record,
         features={
             'image_raw': tf.FixedLenFeature([], tf.string),
-            'label': tf.FixedLenFeature([], tf.int64),
+            'mask_raw': tf.FixedLenFeature([], tf.string)
     })
 
-    label = tf.cast(features['label'], tf.int32)
     image = tf.decode_raw(features['image_raw'], tf.uint8)
+    mask = tf.decode_raw(features['mask_raw'], tf.uint8)
 
-    image.set_shape([PATCH_WIDTH*PATCH_WIDTH*1])
-    image = tf.cast(tf.reshape(image, (PATCH_WIDTH, PATCH_WIDTH, 1)), tf.float32)
+    image = tf.cast(tf.reshape(image, (420, 580, 1)), tf.float32)
+    mask = tf.cast(tf.reshape(mask, (420, 580, 1)), tf.int64)
 
-    #image = tf.image.per_image_whitening(image)
-
-    return image, label
+    return image, mask
 
 def inputs(filenames, batch_size, num_epochs, train=True):
     with tf.name_scope('input'):
@@ -31,7 +29,7 @@ def inputs(filenames, batch_size, num_epochs, train=True):
 
         example, label = read_and_decode(filename_queue)
 
-        min_after_dequeue = 1500
+        min_after_dequeue = 15
         capacity = min_after_dequeue + 3 * batch_size
 
         if train:

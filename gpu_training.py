@@ -62,7 +62,7 @@ def run_training_from_ckpt(run_name, filenames):
         saver = tf.train.Saver(old_vars)
         everything_saver = tf.train.Saver()
 
-        saver.restore(sess, "checkpoint/model-F-4932")
+        saver.restore(sess, "checkpoint/model-C-4932")
         sess.run(local_init_op)
 
         need_start = sess.run(tf.report_uninitialized_variables())

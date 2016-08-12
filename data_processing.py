@@ -1,14 +1,14 @@
-import os
-import numpy as np
 import tensorflow as tf
-from PIL import Image
+import numpy as np
+import cv2
 
 import random
+import os
 
 PATCH_WIDTH = 139
 
 def open_image(filename):
-    return np.array(Image.open(filename))
+    return cv2.imread(filename, 0)
 
 def pad_zeros(vec, w, iaxis, kwargs):
     vec[:w[0]] = 0
@@ -55,6 +55,33 @@ def _int64_feature(value):
 
 def _bytes_feature(value):
   return tf.train.Feature(bytes_list=tf.train.BytesList(value=[value]))
+
+def generate_deconv_dataset(name, filenames):
+    train_im_dir = 'train/images'
+    train_mask_dir = 'train/masks'
+
+    data_dir = 'data'
+
+    n = 1
+    for filename in filenames:
+        path_name = os.path.join(data_dir, str(n) + '-' + name + '.tfrecords')
+        writer = tf.python_io.TFRecordWriter(path_name)
+
+        im_path = os.path.join(train_im_dir, filename + '.tif')
+        mask_path = os.path.join(train_mask_dir, filename + '_mask.tif')
+
+        image = open_image(im_path)
+        mask = open_image(mask_path)
+        mask = mask/255
+
+        example = tf.train.Example(features=tf.train.Features(feature={
+            'image_raw': _bytes_feature(image.astype(np.uint8).tostring()),
+            'mask_raw' : _bytes_feature(mask.astype(np.uint8).tostring())
+        }))
+
+        writer.write(example.SerializeToString())
+        writer.close()
+        n += 1
 
 def generate_dataset(name, filenames):
     train_dir = 'train'
@@ -118,9 +145,16 @@ def generate_validation_list():
 #l = ["1_1"]
 #generate_dataset("TEST2", l)
 
-#training_list = generate_training_list()
+if __name__ == "__main__":
+    training_list = generate_training_list()
+    generate_deconv_dataset("e2e-training", training_list)
+
 #generate_dataset("p139-training", training_list)
 
-testing_list = generate_testing_list()
-generate_dataset("p139-testing", testing_list)
+#testing_list = generate_testing_list()
+#generate_dataset("p139-testing", testing_list)
+
+#validation_list = generate_validation_list()
+#generate_dataset("p139-validation", validation_list)
+
 
