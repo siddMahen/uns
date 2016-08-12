@@ -12,7 +12,7 @@ import os
 CKPT_DIR = 'checkpoint'
 SUMMARY_DIR = 'log'
 
-BATCH_SIZE = 10
+BATCH_SIZE = 1
 NUM_EPOCHS = 1
 
 def loss(logits, labels):
