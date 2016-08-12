@@ -5,6 +5,8 @@ import cv2
 import random
 import os
 
+import argparse
+
 PATCH_WIDTH = 139
 
 def open_image(filename):
@@ -56,7 +58,7 @@ def _int64_feature(value):
 def _bytes_feature(value):
   return tf.train.Feature(bytes_list=tf.train.BytesList(value=[value]))
 
-def generate_deconv_dataset(name, filenames):
+def generate_deconv_dataset(train_im_dir, train_mask_dir, name, filenames):
     train_im_dir = 'train/images'
     train_mask_dir = 'train/masks'
 
@@ -146,8 +148,17 @@ def generate_validation_list():
 #generate_dataset("TEST2", l)
 
 if __name__ == "__main__":
-    training_list = generate_training_list()
-    generate_deconv_dataset("e2e-training", training_list)
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-im', '--image_dir', required=True)
+    parser.add_argument('-msk', '--mask_dir', required=True)
+    parser.add_argument('-s', '--suffix', default="")
+    parser.add_argument('-n', '--name', required=True)
+
+    args = parser.parse_args()
+    t_list = generate_training_list()
+    l = map(lambda x: x + args.suffix, t_list)
+
+    generate_deconv_dataset(args.image_dir, args.mask_dir, args.name, l)
 
 #generate_dataset("p139-training", training_list)
 
