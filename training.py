@@ -38,7 +38,7 @@ def train(loss):
         train_op = tf.train.AdamOptimizer(1e-5).minimize(loss)
         return train_op
 
-def run_training_from_ckpt(run_name, filenames):
+def run_training_from_ckpt(run_name, filenames, is_gpu=False):
     with tf.Graph().as_default():
         images, labels = inputs(filenames, batch_size=BATCH_SIZE,
             num_epochs=NUM_EPOCHS, train=True)
@@ -62,7 +62,11 @@ def run_training_from_ckpt(run_name, filenames):
         saver = tf.train.Saver(old_vars)
         everything_saver = tf.train.Saver()
 
-        saver.restore(sess, "checkpoint/model-F-4932")
+        if is_gpu:
+            saver.restore(sess, "checkpoint/model-C-4932")
+        else:
+            saver.restore(sess, "checkpoint/model-F-4932")
+
         sess.run(local_init_op)
 
         need_start = sess.run(tf.report_uninitialized_variables())
@@ -133,19 +137,21 @@ def run_training(run_name, filenames):
         # check to see if there's anything saved under this run_name; if so
         # load it up
 
+        # find path names (w/o .meta endings) to load
+        # TODO: this is a cheap hack; fix using regex
+        paths = glob.glob('checkpoint/model-'+run_name+'-*')
+        no_meta_paths = filter(lambda x: x.find(".meta") == -1, paths)
+        ckpt_paths = sorted(no_meta_paths,
+                key=lambda x: int(x.split('-')[-1]), reverse=True)
+
         prev_step = 0
-        ckpt = tf.train.get_checkpoint_state(CKPT_DIR)
 
-        if ckpt and ckpt.model_checkpoint_path:
-            # Check if the run name matches ours
-            ending = ckpt.model_checkpoint_path.split('/')[-1].split('-')
-            alt_name = ending[1]
+        if len(ckpt_paths) >= 1:
+            ckpt_path = ckpt_paths[0]
+            ending = ckpt_path.split('/')[-1].split('-')
 
-            if alt_name == run_name:
-                prev_step = int(ending[2])
-                saver.restore(sess, ckpt.model_checkpoint_path)
-            else:
-                sess.run(init_op)
+            prev_step = int(ending[2])
+            saver.restore(sess, ckpt_path)
         else:
             sess.run(init_op)
 
@@ -157,14 +163,7 @@ def run_training(run_name, filenames):
         ckpt_path = os.path.join(CKPT_DIR, "model-" + run_name)
 
         writer = tf.train.SummaryWriter(log_dir, sess.graph)
-
         threads = tf.train.start_queue_runners(sess=sess,coord=coord)
-
-        for v in tf.all_variables():
-            if 'epoch' in v.name:
-                print(v.name)
-                print(v.eval(sess))
-                v.assign(1)
 
         try:
             step = prev_step
@@ -196,11 +195,12 @@ if __name__ == '__main__':
     parser.add_argument('-rn', '--run_name', required=True)
     parser.add_argument('--training_data', nargs='+', required=True)
     parser.add_argument('--from_ckpt', action='store_true')
+    parser.add_argument('--gpu', action='store_true')
 
     args = parser.parse_args()
 
     if args.from_ckpt:
-        run_training_from_ckpt(args.run_name, args.training_data)
+        run_training_from_ckpt(args.run_name, args.training_data, is_gpu=args.gpu)
     else:
         run_training(args.run_name, args.training_data)
 
