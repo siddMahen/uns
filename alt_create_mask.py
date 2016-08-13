@@ -56,56 +56,22 @@ def create_mask(run_name, direc, filenames):
         for fname in filenames:
             im = cv2.imread(fname, cv2.IMREAD_GRAYSCALE)
             im = im.reshape((420, 580, 1))
-            hm, res = sess.run([prob, pred], feed_dict={ images: [im] })
+            #hm, res = sess.run([prob, pred], feed_dict={ images: [im] })
 
-            hm = np.array(map(lambda x: x[1],
-                hm.tolist())).reshape((420,580))
+            #hm = np.array(map(lambda x: x[1],
+            #    hm.tolist())).reshape((420,580))
 
-            res = res.reshape((420, 580)).astype("uint8")
-
-            mask = 255*(res)
-            heatmap = 255*hm
-
-            print(heatmap)
-
-            cv2.imwrite("deconv_mask.tif", mask)
-            cv2.imwrite("deconv_hm.tif", heatmap)
-            sys.exit()
-
-            res = 255*(res.reshape(27, 37).astype("uint8"))
-            heatmap = 255*(np.array(map(lambda x: x[1],
-                p.tolist())).reshape((27,37)))
-
-
-            res = cv2.medianBlur(res, 3)
-            res = cv2.resize(res, (580 + 2*k, 420 + 2*k), cv2.INTER_NEAREST)
-            res = res[k:k + 420, k:k + 580]
-            #res = cv2.medianBlur(res, (3,3), 0)
-            cutoff(res, 240)
-            cv2.imwrite("res.tif", res.astype("uint8"))
-
-            #cutoff(heatmap, thresh)
-            # changing the kernel size and the interpolation method has enourmous
-            # consequences: NEAREST_NEIGHBOR is much more dependable, and has
-            # a much "smoother" averaging effect.
-            blur = cv2.GaussianBlur(heatmap, (7,7), 0)
-            re = cv2.resize(blur, (580 + 2*k, 420 + 2*k), cv2.INTER_NEAREST)
-            cutoff(re, 128)
-
-            #re = cv2.resize(heatmap, (580 + 2*k, 420 + 2*k), cv2.INTER_CUBIC)
-            #cutoff(re, 128)
-            #blur = cv2.GaussianBlur(re, (3,3), 0)
-            #cutoff(blur, 128)
-
-            crop = re[k:k + 420, k:k + 580]
-            final = crop.astype("uint8")
+            #res = res.reshape((420, 580)).astype("uint8")
+            mask = sess.run(pred, feed_dict={ images: [im] })
+            mask = (255*mask).reshape((420, 580)).astype("uint8")
+            mask = cv2.medianBlur(mask, 3)
 
             path = os.path.splitext(fname)[0]
             name = os.path.basename(path)
             write_path = os.path.join(directory, "%s_mask.tif" % name)
             print("Mask saved to %s" % write_path)
 
-            cv2.imwrite(write_path, final)
+            cv2.imwrite(write_path, mask)
 
         sess.close()
 
