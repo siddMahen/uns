@@ -222,24 +222,24 @@ def inference(images, keep_prob, batch_size):
         l9 = tf.concat(3, [l9_1x1, l9_3x3, l9_5x5, l9_proj])
         # output here is 25 x 35 x 1024
 
-    l5_cpy = tf.identity(l5)
-    deconv_l5_1x1_pre = conv_layer(l5_cpy, 512, 128, k=1, s=1, layer_name="deconv_l5_1x1_pre")
+    l8_cpy = tf.identity(l8)
+    deconv_l8_1x1_pre = conv_layer(l8_cpy, 832, 512, k=1, s=1, layer_name="deconv_l8_1x1_pre")
     #output here is 27 x 37 x 256
 
-    W_l5 = weight_var("deconv_l5_weight", [10, 10, 64, 128], wd=1e-4)
-    deconv_l5 = tf.nn.conv2d_transpose(deconv_l5_1x1_pre,
-            W_l5, [batch_size, 210, 290, 64], [1, 8, 8, 1])
+    W_l8 = weight_var("deconv_l8_weight", [18, 18, 2, 512], wd=1e-4)
+    deconv_l8 = tf.nn.conv2d_transpose(deconv_l8_1x1_pre,
+            W_l8, [batch_size, 210, 290, 2], [1, 8, 8, 1], padding="VALID")
 
-    deconv_l9_1x1_pre = conv_layer(l9, 1024, 256, k=1, s=1, layer_name="deconv_l9_1x1_pre")
+    deconv_l9_1x1_pre = conv_layer(l9, 1024, 768, k=1, s=1, layer_name="deconv_l9_1x1_pre")
 
-    W_l9 = weight_var("deconv_l9_weight", [18, 18, 64, 256], wd=1e-4)
+    W_l9 = weight_var("deconv_l9_weight", [18, 18, 2, 768], wd=1e-4)
     deconv_l9 = tf.nn.conv2d_transpose(deconv_l9_1x1_pre,
-            W_l9, [batch_size, 210, 290, 64], [1, 8, 8, 1], padding="VALID")
+            W_l9, [batch_size, 210, 290, 2], [1, 8, 8, 1], padding="VALID")
 
-    deconv_concat = tf.concat(3, [deconv_l5, deconv_l9])
+    deconv_concat = tf.concat(3, [deconv_l8, deconv_l9])
     #deconv_concat = tf.add(deconv_l5, deconv_l9)
 
-    W_final = weight_var("deconv_final_weight", [2, 2, 2, 128], wd=1e-4)
+    W_final = weight_var("deconv_final_weight", [2, 2, 2, 4], wd=1e-4)
     deconv_final = tf.nn.conv2d_transpose(deconv_concat, W_final,
             [batch_size, 420, 580, 2], [1, 2, 2, 1], padding="VALID")
 
