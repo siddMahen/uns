@@ -1,5 +1,6 @@
 import tensorflow as tf
 import numpy as np
+import math
 
 def variable_summaries(var, name):
     with tf.name_scope("summaries"):
@@ -71,6 +72,28 @@ def fc_layer(input_tensor, input_dim, output_dim, keep_prob, layer_name, final=F
             relu = tf.nn.relu(activations, 'relu')
             tf.histogram_summary(layer_name + '/activations_relu', relu)
             return tf.nn.dropout(relu, keep_prob)
+
+def get_deconv_filter(f_shape, name):
+    width = f_shape[0]
+    heigh = f_shape[1]
+
+    f = math.ceil(width/2.0)
+    c = (2 * f - 1 - f % 2) / (2.0 * f)
+    bilinear = np.zeros([f_shape[0], f_shape[1]])
+
+    for x in range(width):
+        for y in range(heigh):
+            value = (1 - abs(x / f - c)) * (1 - abs(y / f - c))
+            bilinear[x, y] = value
+
+    weights = np.zeros(f_shape)
+    for i in range(f_shape[2]):
+        weights[:, :, i, i] = bilinear
+
+    init = tf.constant_initializer(value=weights, dtype=tf.float32)
+
+    return tf.get_variable(name=name, initializer=init, shape=weights.shape)
+
 
 def inference(images, keep_prob, batch_size):
     with tf.variable_scope("conv1"):
@@ -223,23 +246,19 @@ def inference(images, keep_prob, batch_size):
         # output here is 25 x 35 x 1024
 
     l8_cpy = tf.identity(l8)
-    deconv_l8_1x1_pre = conv_layer(l8_cpy, 832, 512, k=1, s=1, layer_name="deconv_l8_1x1_pre")
-    #output here is 27 x 37 x 256
 
-    W_l8 = weight_var("deconv_l8_weight", [18, 18, 2, 512], wd=1e-4)
-    deconv_l8 = tf.nn.conv2d_transpose(deconv_l8_1x1_pre,
+    W_l8 = get_deconv_filter([18, 18, 2, 832], "deconv_l8_weight")
+    deconv_l8 = tf.nn.conv2d_transpose(l8_cpy,
             W_l8, [batch_size, 210, 290, 2], [1, 8, 8, 1], padding="VALID")
 
-    deconv_l9_1x1_pre = conv_layer(l9, 1024, 768, k=1, s=1, layer_name="deconv_l9_1x1_pre")
-
-    W_l9 = weight_var("deconv_l9_weight", [18, 18, 2, 768], wd=1e-4)
-    deconv_l9 = tf.nn.conv2d_transpose(deconv_l9_1x1_pre,
+    W_l9 = get_deconv_filter([18, 18, 2, 1024], "deconv_l9_weight")
+    deconv_l9 = tf.nn.conv2d_transpose(l9,
             W_l9, [batch_size, 210, 290, 2], [1, 8, 8, 1], padding="VALID")
 
     deconv_concat = tf.concat(3, [deconv_l8, deconv_l9])
     #deconv_concat = tf.add(deconv_l5, deconv_l9)
 
-    W_final = weight_var("deconv_final_weight", [2, 2, 2, 4], wd=1e-4)
+    W_final = get_deconv_filter([2, 2, 2, 4], "deconv_final_weight")
     deconv_final = tf.nn.conv2d_transpose(deconv_concat, W_final,
             [batch_size, 420, 580, 2], [1, 2, 2, 1], padding="VALID")
 
