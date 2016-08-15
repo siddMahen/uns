@@ -245,22 +245,35 @@ def inference(images, keep_prob, batch_size):
         l9 = tf.concat(3, [l9_1x1, l9_3x3, l9_5x5, l9_proj])
         # output here is 25 x 35 x 1024
 
-    l8_cpy = tf.identity(l8)
+    l1_cpy = tf.identity(l1)
+    l1_1x1_pre = conv_layer(l1_cpy, 256, 128, k=1, s=1, layer_name="l1_1x1_deconv_pre")
+    l9_1x1_pre = conv_layer(l9, 1024, 512, k=1, s=1, layer_name="l9_1x1_deconv_pre")
 
-    W_l8 = get_deconv_filter([18, 18, 2, 832], "deconv_l8_weight")
-    deconv_l8 = tf.nn.conv2d_transpose(l8_cpy,
-            W_l8, [batch_size, 210, 290, 2], [1, 8, 8, 1], padding="VALID")
+    W_l9 = get_deconv_filter([5, 5, 128, 512], "deconv_l9_weight")
+    deconv_l9 = tf.nn.conv2d_transpose(l9_1x1_pre, W_l9, [batch_size, 53, 73, 128],
+            [1, 2, 2, 1], padding="VALID")
 
-    W_l9 = get_deconv_filter([18, 18, 2, 1024], "deconv_l9_weight")
-    deconv_l9 = tf.nn.conv2d_transpose(l9,
-            W_l9, [batch_size, 210, 290, 2], [1, 8, 8, 1], padding="VALID")
+    deconv_sum = tf.add(deconv_l9, l1_1x1_pre)
 
-    deconv_concat = tf.concat(3, [deconv_l8, deconv_l9])
+    W_final = get_deconv_filter([56, 76, 2, 128], "deconv_final_weight")
+    deconv_final = tf.nn.conv2d_transpose(deconv_sum, W_final,
+            [batch_size, 420, 580, 2], [1, 7, 7, 1], padding="VALID")
+    #l8_cpy = tf.identity(l8)
+
+    #W_l8 = get_deconv_filter([18, 18, 2, 832], "deconv_l8_weight")
+    #deconv_l8 = tf.nn.conv2d_transpose(l8_cpy,
+    #        W_l8, [batch_size, 210, 290, 2], [1, 8, 8, 1], padding="VALID")
+
+    #W_l9 = get_deconv_filter([18, 18, 2, 1024], "deconv_l9_weight")
+    #deconv_l9 = tf.nn.conv2d_transpose(l9,
+    #        W_l9, [batch_size, 210, 290, 2], [1, 8, 8, 1], padding="VALID")
+
+    #deconv_concat = tf.concat(3, [deconv_l8, deconv_l9])
     #deconv_concat = tf.add(deconv_l5, deconv_l9)
 
-    W_final = get_deconv_filter([2, 2, 2, 4], "deconv_final_weight")
-    deconv_final = tf.nn.conv2d_transpose(deconv_concat, W_final,
-            [batch_size, 420, 580, 2], [1, 2, 2, 1], padding="VALID")
+    #W_final = get_deconv_filter([2, 2, 2, 4], "deconv_final_weight")
+    #deconv_final = tf.nn.conv2d_transpose(deconv_concat, W_final,
+    #        [batch_size, 420, 580, 2], [1, 2, 2, 1], padding="VALID")
 
     return deconv_final
 
