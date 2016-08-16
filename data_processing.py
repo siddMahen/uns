@@ -69,6 +69,9 @@ def generate_deconv_dataset(train_im_dir, train_mask_dir, name, filenames):
         im_path = os.path.join(train_im_dir, filename + '.tif')
         mask_path = os.path.join(train_mask_dir, filename + '_mask.tif')
 
+        print(im_path)
+        print(mask_path)
+
         image = open_image(im_path)
         mask = open_image(mask_path)
         mask = mask/255
@@ -141,9 +144,6 @@ def generate_validation_list():
     l += ["44_%d" % d for d in range(1,120)]
     return l
 
-#l = ["1_1"]
-#generate_dataset("TEST2", l)
-
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('-im', '--image_dir', required=True)
@@ -151,19 +151,21 @@ if __name__ == "__main__":
     parser.add_argument('-s', '--suffix', default="")
     parser.add_argument('-n', '--name', required=True)
 
+    group = parser.add_mutually_exclusive_group()
+    group.add_argument('-v', '--validation', action='store_true')
+    group.add_argument('-t', '--test', action='store_true')
+
     args = parser.parse_args()
-
     t_list = generate_training_list()
-    l = map(lambda x: x + "-" + args.suffix, t_list)
 
+    if args.validation:
+        t_list = generate_validation_list()
+
+    if args.test:
+        t_list = generate_testing_list()
+
+    if args.suffix != "":
+        args.suffix = "-" + args.suffix
+
+    l = map(lambda x: x + args.suffix, t_list)
     generate_deconv_dataset(args.image_dir, args.mask_dir, args.name, l)
-
-#generate_dataset("p139-training", training_list)
-
-#testing_list = generate_testing_list()
-#generate_dataset("p139-testing", testing_list)
-
-#validation_list = generate_validation_list()
-#generate_dataset("p139-validation", validation_list)
-
-
