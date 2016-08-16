@@ -24,7 +24,6 @@ def batch_training_error(logits, labels):
         p = prediction(logits)
         l = labels
         inter = tf.cast(p * l, tf.float32)
-        print(inter)
 
         inter_size = tf.reduce_sum(inter)
         p_size = tf.cast(tf.reduce_sum(p), tf.float32)
@@ -39,12 +38,12 @@ def batch_training_error(logits, labels):
 
 def evaluate_model(run_name, filenames):
     with tf.Graph().as_default():
-        images, labels = inputs(filenames, batch_size=20,
+        images, labels = inputs(filenames, batch_size=1,
                 num_epochs=1, train=False)
 
         keep_prob = tf.Variable(1.0, name='keep_prob', trainable=False)
 
-        logits = inference(images, keep_prob, 20)
+        logits = inference(images, keep_prob, 1)
         flat_logits = tf.reshape(logits, [-1,2])
         flat_labels = tf.reshape(labels, [-1])
 
