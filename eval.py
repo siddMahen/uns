@@ -11,7 +11,6 @@ import sys
 import os
 
 SUMMARY_DIR = 'log'
-PATCH_WIDTH = 139
 
 def prediction(logits):
     with tf.name_scope('prediction'):
@@ -22,20 +21,34 @@ def prediction(logits):
 
 def batch_training_error(logits, labels):
     with tf.name_scope('training_error'):
-        correct_predictions = tf.equal(prediction(logits), tf.cast(labels, tf.int64))
-        accuracy = tf.reduce_mean(tf.cast(correct_predictions, tf.float32))
-        tf.scalar_summary('accuracy', accuracy)
-        return 1.0 - accuracy
+        p = prediction(logits)
+        l = labels
+        inter = tf.cast(p * l, tf.float32)
+        print(inter)
+
+        inter_size = tf.reduce_sum(inter)
+        p_size = tf.cast(tf.reduce_sum(p), tf.float32)
+        l_size = tf.cast(tf.reduce_sum(l), tf.float32)
+
+        return (2*inter_size)/(p_size + l_size + 0.001)
+
+        #dice_score = tf.div(2*intersection, p_size + l_size)
+
+        #tf.scalar_summary('dice_score', dice_score)
+        #return dice_score
 
 def evaluate_model(run_name, filenames):
     with tf.Graph().as_default():
-        images, labels = inputs(filenames, batch_size=128,
+        images, labels = inputs(filenames, batch_size=20,
                 num_epochs=1, train=False)
 
         keep_prob = tf.Variable(1.0, name='keep_prob', trainable=False)
 
-        logits = inference(images, keep_prob)
-        training_error = batch_training_error(logits, labels)
+        logits = inference(images, keep_prob, 20)
+        flat_logits = tf.reshape(logits, [-1,2])
+        flat_labels = tf.reshape(labels, [-1])
+
+        training_error = batch_training_error(flat_logits, flat_labels)
         summary_op = tf.merge_all_summaries()
 
         local_init_op = tf.initialize_local_variables()
