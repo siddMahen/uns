@@ -23,7 +23,7 @@ def loss(logits, labels):
         # use dice ratio as loss? can be implemented using simple tf fns
 
         log_softmax = tf.nn.log_softmax(flat_logits)
-        weights = tf.convert_to_tensor([0.5, 25.0])
+        weights = tf.convert_to_tensor([1.0, 8.0])
         one_hot = tf.one_hot(flat_labels, 2)
 
         y = -log_softmax * weights
@@ -38,7 +38,7 @@ def loss(logits, labels):
 
 def train(loss):
     with tf.name_scope('train'):
-        train_op = tf.train.AdamOptimizer(1e-5).minimize(loss)
+        train_op = tf.train.AdamOptimizer(5e-5).minimize(loss)
         return train_op
 
 def run_training_from_ckpt(run_name, filenames, is_gpu=False):
