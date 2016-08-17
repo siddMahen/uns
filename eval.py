@@ -41,9 +41,7 @@ def evaluate_model(run_name, filenames):
         images, labels = inputs(filenames, batch_size=1,
                 num_epochs=1, train=False)
 
-        keep_prob = tf.Variable(1.0, name='keep_prob', trainable=False)
-
-        logits = inference(images, keep_prob, 1)
+        logits = inference(images, 1)
         flat_logits = tf.reshape(logits, [-1,2])
         flat_labels = tf.reshape(labels, [-1])
 
@@ -71,7 +69,6 @@ def evaluate_model(run_name, filenames):
         print(ckpt_path)
 
         saver.restore(sess, ckpt_path)
-        keep_prob.assign(1.0)
 
         sess.run(local_init_op)
 
