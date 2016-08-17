@@ -44,9 +44,7 @@ def run_training_from_ckpt(run_name, filenames, is_gpu=False):
         images, labels = inputs(filenames, batch_size=BATCH_SIZE,
             num_epochs=NUM_EPOCHS, train=True)
 
-        keep_prob = tf.Variable(0.5, name='keep_prob', trainable=False)
-
-        logits = inference(images, keep_prob, BATCH_SIZE)
+        logits = inference(images, BATCH_SIZE)
         loss_op = loss(logits, labels)
         train_op = train(loss_op)
 
@@ -122,9 +120,7 @@ def run_training(run_name, filenames):
         images, labels = inputs(filenames, batch_size=BATCH_SIZE,
             num_epochs=NUM_EPOCHS, train=True)
 
-        keep_prob = tf.Variable(0.5, name='keep_prob', trainable=False)
-
-        logits = inference(images, keep_prob, BATCH_SIZE)
+        logits = inference(images, BATCH_SIZE)
         loss_op = loss(logits, labels)
         train_op = train(loss_op)
 
