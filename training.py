@@ -22,17 +22,19 @@ def loss(logits, labels):
         flat_labels = tf.reshape(labels, [-1])
         # use dice ratio as loss? can be implemented using simple tf fns
 
-        sft_max = tf.nn.sparse_softmax_cross_entropy_with_logits(flat_logits, flat_labels)
-        with tf.name_scope('total'):
-            total = tf.reduce_sum(sft_max)
-        with tf.name_scope('normalized'):
-            normalized = tf.reduce_mean(sft_max)
-        tf.scalar_summary('cross_entropy', normalized)
+        log_softmax = tf.nn.log_softmax(flat_logits)
+        weights = tf.convert_to_tensor([0.5, 25.0])
+        one_hot = tf.one_hot(flat_labels, 2)
+
+        y = -log_softmax * weights
+        x_ent = tf.reduce_mean(tf.reduce_sum(one_hot * y, 1))
+
+        tf.scalar_summary('cross_entropy', x_ent)
 
     for l in tf.get_collection("losses"):
-        normalized += l
+        x_ent += l
 
-    return normalized
+    return x_ent
 
 def train(loss):
     with tf.name_scope('train'):
