@@ -33,9 +33,8 @@ def create_mask(run_name, direc, filenames):
 
     with tf.Graph().as_default():
         images = tf.placeholder(tf.float32, shape=(1, 420, 580, 1))
-        keep_prob = tf.Variable(1.0, name='keep_prob', trainable=False)
 
-        logits = inference(images, keep_prob, 1)
+        logits = inference(images, 1)
         flat_logits = tf.reshape(logits, [-1,2])
         prob = tf.nn.softmax(flat_logits)
         pred = prediction(flat_logits)
@@ -51,7 +50,6 @@ def create_mask(run_name, direc, filenames):
         print(ckpt_path)
 
         saver.restore(sess, ckpt_path)
-        keep_prob.assign(1.0)
 
         for fname in filenames:
             im = cv2.imread(fname, cv2.IMREAD_GRAYSCALE)
