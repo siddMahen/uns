@@ -85,6 +85,13 @@ def evaluate_model(run_name, filenames):
             while not coord.should_stop():
                 dc, empty_l, empty_p, ps, ls = sess.run(training_error)
 
+                # if pred_size <= 4000; ignore prediction and treat like
+                # empty pred
+
+                if ps <= 4000:
+                    empty_p = True
+                    dc = 0
+
                 if (empty_l == False) and (empty_p == False):
                     print("Step %d, dice ratio: %.3f - NT present and correctly identified: pred size %d label size %d" % (step, dc, ps, ls))
                     results.append(dc)
