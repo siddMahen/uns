@@ -29,12 +29,12 @@ def batch_training_error(logits, labels):
         p_size = tf.cast(tf.reduce_sum(p), tf.float32)
         l_size = tf.cast(tf.reduce_sum(l), tf.float32)
 
-        return (2*inter_size)/(p_size + l_size + 0.001)
+        is_empty_label = tf.equal(l_size, 0)
+        is_empty_pred = tf.equal(p_size, 0)
 
-        #dice_score = tf.div(2*intersection, p_size + l_size)
+        dice_ratio = (2*inter_size)/(p_size + l_size + 0.001)
 
-        #tf.scalar_summary('dice_score', dice_score)
-        #return dice_score
+        return dice_ratio, is_empty_label, is_empty_pred
 
 def evaluate_model(run_name, filenames):
     with tf.Graph().as_default():
@@ -76,13 +76,42 @@ def evaluate_model(run_name, filenames):
         threads = tf.train.start_queue_runners(sess=sess, coord=coord)
 
         results = []
+        false_neg = []
+        false_pos = []
+        empty = []
 
         try:
             step = 0
             while not coord.should_stop():
-                err = sess.run(training_error)
-                print("Step %d, batch training error: %.3f" % (step, err))
-                results.append(err)
+                dc, empty_l, empty_p = sess.run(training_error)
+
+                if (empty_l == False) and (empty_p == False):
+                    print("Step %d, dice ratio: %.3f - NT present and correctly identified" % (step, dc))
+                    results.append(dc)
+                    false_neg.append(0)
+                    false_pos.append(0)
+                    empty.append(0)
+
+                if (empty_l == False) and (empty_p == True):
+                    print("Step %d, dice ratio: %.3f - NT present but not identified" % (step, dc))
+                    results.append(dc)
+                    false_neg.append(1)
+                    false_pos.append(0)
+                    empty.append(0)
+
+                if (empty_l == True) and (empty_p == False):
+                    print("Step %d, dice ratio: %.3f - NT not present but identified" % (step, dc))
+                    results.append(dc)
+                    false_neg.append(0)
+                    false_pos.append(1)
+                    empty.append(0)
+
+                if (empty_l == True) and (empty_p == True):
+                    print("Step %d, dice ratio: 1.00 - NT not present and correctly identified" % step)
+                    results.append(1)
+                    false_neg.append(0)
+                    false_pos.append(0)
+                    empty.append(1)
 
                 if step % 10 == 0:
                     summary = sess.run(summary_op)
@@ -92,7 +121,13 @@ def evaluate_model(run_name, filenames):
                 step += 1
         except tf.errors.OutOfRangeError:
             print('Done evaluation for %d steps.' % step)
-            print('Total training error: %.3f' % np.mean(results))
+            print('No. false positives: %d' % len(false_pos))
+            print('No. false negatives: %d' % len(false_neg))
+            print('No. empty label/prediction pairs: %d' % len(empty))
+            print('False positive rate: %.3f' % np.mean(false_pos))
+            print('False negative rate: %.3f' % np.mean(false_neg))
+            print('Empty label/prediction pair rate: %.3f' % np.mean(empty))
+            print('Mean dice ratio: %.3f' % np.mean(results))
         finally:
             coord.request_stop()
 
